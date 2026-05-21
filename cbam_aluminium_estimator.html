@@ -1,0 +1,194 @@
+
+<h2 class="sr-only">CBAM cost estimator for Indian aluminium exporters to the EU — enter your CN code, export volume, and ETS price to see your exposure</h2>
+
+<div style="border-bottom: 0.5px solid var(--color-border-tertiary); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+  <div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;">
+    <span style="font-size: 20px; font-weight: 500; color: var(--color-text-primary);">CBAM exposure estimator</span>
+    <span style="font-size: 12px; background: var(--color-background-info); color: var(--color-text-info); padding: 2px 10px; border-radius: var(--border-radius-md);">Aluminium · India to EU</span>
+  </div>
+  <p style="font-size: 13px; color: var(--color-text-secondary); margin: 4px 0 0;">Estimate only — based on EU Commission default values. Full Annex III verified calculation requires an engagement.</p>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 1.5rem;">
+  <div>
+    <label style="font-size: 12px; color: var(--color-text-secondary); display: block; margin-bottom: 6px;">Product (CN code)</label>
+    <select id="cnCode" style="width: 100%;">
+      <option value="7601">7601 — Unwrought aluminium (primary/secondary)</option>
+      <option value="7603">7603 — Powders and flakes</option>
+      <option value="7604">7604 — Bars, rods and profiles (extrusions)</option>
+      <option value="7605">7605 — Wire</option>
+      <option value="7606">7606 — Plates, sheets and strip (>0.2mm)</option>
+      <option value="7607" selected>7607 — Foil (≤0.2mm)</option>
+      <option value="7608">7608 — Tubes and pipes</option>
+      <option value="7609">7609 — Tube or pipe fittings</option>
+      <option value="7610">7610 — Structures and structural parts</option>
+      <option value="7611">7611 — Reservoirs and tanks (>300L)</option>
+      <option value="7612">7612 — Casks, drums, cans</option>
+      <option value="7613">7613 — Containers for compressed gas</option>
+      <option value="7614">7614 — Stranded wire and cables</option>
+      <option value="7616">7616 — Other articles of aluminium</option>
+    </select>
+  </div>
+  <div>
+    <label style="font-size: 12px; color: var(--color-text-secondary); display: block; margin-bottom: 6px;">Annual EU export volume (tonnes)</label>
+    <input type="number" id="volume" value="2000" min="1" max="500000" style="width: 100%;" placeholder="e.g. 2000">
+  </div>
+</div>
+
+<div style="margin-bottom: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+    <label style="font-size: 12px; color: var(--color-text-secondary);">EU ETS carbon price (€/tCO₂e)</label>
+    <span style="font-size: 13px; font-weight: 500;" id="etsDisplay">€80</span>
+  </div>
+  <input type="range" id="etsPrice" min="50" max="150" step="5" value="80" style="width: 100%;">
+  <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--color-text-tertiary); margin-top: 4px;">
+    <span>€50 conservative</span><span>€80 current</span><span>€150 2030 forecast</span>
+  </div>
+</div>
+
+<div id="results" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 1.5rem;"></div>
+
+<div style="margin-bottom: 1rem;">
+  <p style="font-size: 12px; color: var(--color-text-secondary); margin-bottom: 8px;">Annual CBAM cost trajectory 2026–2034 (€)</p>
+  <div style="position: relative; width: 100%; height: 220px;">
+    <canvas id="cbamChart" role="img" aria-label="Line chart showing CBAM cost trajectory from 2026 to 2034, comparing EU default values versus verified supplier data"></canvas>
+  </div>
+</div>
+
+<div style="border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; background: var(--color-background-secondary);">
+  <p style="font-size: 13px; font-weight: 500; margin: 0 0 4px; color: var(--color-text-primary);">What this estimate does not capture</p>
+  <p style="font-size: 12px; color: var(--color-text-secondary); margin: 0; line-height: 1.6;">This tool uses EU Commission default values for your CN code. Your actual exposure depends on your supplier's verified emission intensity (Hindalco, Vedanta, NALCO etc.), your plant's yield losses, and your own ancillary combustion. A verified Annex III calculation can reduce this estimate by 40–77%. The Scope 2 electricity liability (excluded from 2026 declarations but phasing in) is also not shown here.</p>
+</div>
+
+<div style="border-left: 2px solid #0F6E56; padding: 0.75rem 1rem; margin-bottom: 1.5rem;">
+  <p style="font-size: 13px; font-weight: 500; margin: 0 0 2px; color: var(--color-text-primary);">Want your verified number?</p>
+  <p style="font-size: 12px; color: var(--color-text-secondary); margin: 0 0 8px;">Full Annex III calculation, supplier data coordination, and 8-year financial model — Riddhi Kankaria, CBAM Advisory, Hyderabad.</p>
+  <a href="https://www.linkedin.com/in/riddhikankaria" target="_blank" style="font-size: 12px; color: #0F6E56; text-decoration: none; font-weight: 500;">Connect on LinkedIn →</a>
+</div>
+
+<p style="font-size: 11px; color: var(--color-text-tertiary); margin: 0;">Estimate based on EU Commission default values and CBAM Implementing Regulation 2023/1773. Free allowance phase-out per EU Regulation 2021/447. Not a verified calculation. For compliance purposes only a full Annex III methodology applies.</p>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const SEE = {
+  '7601': 6.70, '7603': 7.05, '7604': 7.15, '7605': 7.20,
+  '7606': 7.30, '7607': 7.59, '7608': 7.15, '7609': 7.25,
+  '7610': 7.40, '7611': 7.30, '7612': 7.30, '7613': 7.35,
+  '7614': 7.25, '7616': 7.30
+};
+const BENCHMARK = 1.464;
+const PHASE = [0.025, 0.05, 0.125, 0.25, 0.375, 0.50, 0.625, 0.75, 1.0];
+const YEARS = [2026,2027,2028,2029,2030,2031,2032,2033,2034];
+
+let chart;
+
+function fmt(n) { return new Intl.NumberFormat('en-EU', {style:'currency', currency:'EUR', maximumFractionDigits: 0}).format(n); }
+function fmtINR(n) {
+  const cr = n * 90 / 10000000;
+  return '₹' + cr.toFixed(2) + ' cr';
+}
+
+function calc() {
+  const cn = document.getElementById('cnCode').value;
+  const vol = parseFloat(document.getElementById('volume').value) || 0;
+  const ets = parseFloat(document.getElementById('etsPrice').value);
+  document.getElementById('etsDisplay').textContent = '€' + ets;
+
+  const see = SEE[cn] || 7.30;
+  const seeVerified = BENCHMARK + (see - BENCHMARK) * 0.40;
+  const gap = Math.max(0, see - BENCHMARK);
+  const gapV = Math.max(0, seeVerified - BENCHMARK);
+
+  const costs = YEARS.map((y,i) => Math.round(gap * vol * PHASE[i] * ets));
+  const costsV = YEARS.map((y,i) => Math.round(gapV * vol * PHASE[i] * ets));
+  const cost2026 = costs[0];
+  const cost2034 = costs[8];
+  const saving2034 = cost2034 - costsV[8];
+
+  document.getElementById('results').innerHTML = `
+    <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:1rem;">
+      <p style="font-size:11px;color:var(--color-text-secondary);margin:0 0 4px;">2026 cost (at 2.5% CBAM)</p>
+      <p style="font-size:20px;font-weight:500;margin:0;color:var(--color-text-primary);">${fmt(cost2026)}</p>
+      <p style="font-size:11px;color:var(--color-text-secondary);margin:4px 0 0;">${fmtINR(cost2026)}</p>
+    </div>
+    <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:1rem;">
+      <p style="font-size:11px;color:var(--color-text-secondary);margin:0 0 4px;">2034 cost (full CBAM)</p>
+      <p style="font-size:20px;font-weight:500;margin:0;color:var(--color-text-primary);">${fmt(cost2034)}</p>
+      <p style="font-size:11px;color:var(--color-text-secondary);margin:4px 0 0;">${fmtINR(cost2034)}</p>
+    </div>
+    <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:1rem;">
+      <p style="font-size:11px;color:var(--color-text-secondary);margin:0 0 4px;">EU default SEE</p>
+      <p style="font-size:20px;font-weight:500;margin:0;color:var(--color-text-primary);">${see.toFixed(2)}</p>
+      <p style="font-size:11px;color:var(--color-text-secondary);margin:4px 0 0;">tCO₂e/tonne</p>
+    </div>
+    <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:1rem;border:0.5px solid #0F6E56;">
+      <p style="font-size:11px;color:var(--color-text-secondary);margin:0 0 4px;">Saving in 2034 with verified data</p>
+      <p style="font-size:20px;font-weight:500;margin:0;color:#0F6E56;">${fmt(saving2034)}</p>
+      <p style="font-size:11px;color:var(--color-text-secondary);margin:4px 0 0;">${fmtINR(saving2034)} saved annually</p>
+    </div>`;
+
+  if (chart) chart.destroy();
+  chart = new Chart(document.getElementById('cbamChart'), {
+    type: 'line',
+    data: {
+      labels: YEARS,
+      datasets: [
+        {
+          label: 'EU default (no verified data)',
+          data: costs,
+          borderColor: '#791F1F',
+          backgroundColor: 'rgba(121,31,31,0.08)',
+          borderWidth: 2,
+          borderDash: [4,4],
+          tension: 0.3,
+          fill: false,
+          pointRadius: 3,
+          pointBackgroundColor: '#791F1F'
+        },
+        {
+          label: 'With verified supplier data',
+          data: costsV,
+          borderColor: '#0F6E56',
+          backgroundColor: 'rgba(15,110,86,0.08)',
+          borderWidth: 2,
+          tension: 0.3,
+          fill: true,
+          pointRadius: 3,
+          pointBackgroundColor: '#0F6E56'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.label + ': ' + fmt(ctx.parsed.y)
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            font: { size: 11 },
+            callback: v => fmt(v)
+          },
+          grid: { color: 'rgba(0,0,0,0.06)' }
+        },
+        x: {
+          ticks: { font: { size: 11 } },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+}
+
+document.getElementById('cnCode').addEventListener('change', calc);
+document.getElementById('volume').addEventListener('input', calc);
+document.getElementById('etsPrice').addEventListener('input', calc);
+calc();
+</script>
