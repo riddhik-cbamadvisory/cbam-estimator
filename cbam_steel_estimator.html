@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CBAM Exposure Estimator — Indian Steel & Iron Exporters</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --steel: #1A3A5C;
+    --steel-light: #E6EEF5;
+    --steel-mid: #2E6DA4;
+    --red-dark: #791F1F;
+    --gray-text: #444441;
+    --gray-muted: #888780;
+    --gray-border: #D3D1C7;
+    --gray-bg: #F1EFE8;
+    --white: #FFFFFF;
+    --off-white: #FAFAF9;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #F0F4F8;
+    color: var(--gray-text);
+    min-height: 100vh;
+    padding: 24px 16px;
+  }
+  .page-wrap { max-width: 780px; margin: 0 auto; }
+
+  .header {
+    background: var(--steel);
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 20px;
+  }
+  .header-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .header h1 { font-size: 22px; font-weight: 600; color: white; margin-bottom: 6px; }
+  .header p { font-size: 13px; color: rgba(255,255,255,0.78); line-height: 1.5; }
+  .badge {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  .card {
+    background: var(--white);
+    border: 1px solid var(--gray-border);
+    border-radius: 10px;
+    padding: 22px 24px;
+    margin-bottom: 16px;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 14px;
+  }
+
+  .inputs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 540px) { .inputs-grid { grid-template-columns: 1fr; } }
+
+  label { font-size: 13px; color: var(--gray-text); display: block; margin-bottom: 6px; font-weight: 500; }
+  select, input[type="number"] {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--gray-border);
+    border-radius: 7px;
+    font-size: 13px;
+    color: var(--gray-text);
+    background: var(--off-white);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  select:focus, input[type="number"]:focus { border-color: var(--steel-mid); background: white; }
+
+  .slider-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; margin-top: 18px; }
+  .slider-val { font-size: 18px; font-weight: 600; color: var(--steel-mid); }
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%; height: 5px;
+    background: var(--gray-border);
+    border-radius: 3px; outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    background: var(--steel-mid);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid white;
+    box-shadow: 0 0 0 1px var(--steel-mid);
+  }
+  .slider-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--gray-muted); margin-top: 6px; }
+
+  .route-toggle {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .route-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--gray-border);
+    border-radius: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    background: var(--off-white);
+    color: var(--gray-text);
+    transition: all 0.15s;
+    font-weight: 500;
+  }
+  .route-btn.active {
+    background: var(--steel);
+    color: white;
+    border-color: var(--steel);
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .metric { background: var(--off-white); border: 1px solid var(--gray-border); border-radius: 8px; padding: 14px 16px; }
+  .metric.highlight { background: var(--steel-light); border-color: var(--steel-mid); }
+  .metric-label { font-size: 11px; color: var(--gray-muted); margin-bottom: 4px; line-height: 1.4; }
+  .metric-value { font-size: 20px; font-weight: 600; color: var(--gray-text); }
+  .metric.highlight .metric-value { color: var(--steel); }
+  .metric-sub { font-size: 11px; color: var(--gray-muted); margin-top: 3px; }
+
+  .chart-legend { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--gray-text); }
+  .legend-dot { width: 16px; height: 3px; border-radius: 2px; }
+  .chart-wrap { position: relative; width: 100%; height: 240px; }
+
+  .route-note {
+    background: #EEF4FB;
+    border: 1px solid #B5D4F4;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #185FA5;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  .disclaimer { background: var(--gray-bg); border-radius: 8px; padding: 14px 16px; font-size: 12px; color: var(--gray-muted); line-height: 1.6; margin-bottom: 16px; }
+  .disclaimer strong { color: var(--gray-text); }
+
+  .cta-card {
+    background: var(--steel);
+    border-radius: 10px;
+    padding: 22px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .cta-text h3 { font-size: 16px; font-weight: 600; color: white; margin-bottom: 4px; }
+  .cta-text p { font-size: 13px; color: rgba(255,255,255,0.8); line-height: 1.5; }
+  .cta-btn {
+    background: white;
+    color: var(--steel);
+    border: none;
+    padding: 11px 22px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .cta-btn:hover { background: var(--steel-light); }
+
+  .footer { text-align: center; font-size: 11px; color: var(--gray-muted); margin-top: 20px; line-height: 1.6; }
+  .footer a { color: var(--steel-mid); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1>CBAM Exposure Estimator</h1>
+        <p>India to EU iron and steel exports &middot; Estimate your carbon border liability 2026&ndash;2034</p>
+      </div>
+      <span class="badge">Steel &amp; Iron &middot; Free Tool</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">Production route</div>
+    <div class="route-toggle">
+      <button class="route-btn active" onclick="setRoute('bof')" id="btn-bof">Blast Furnace / BOF (integrated)</button>
+      <button class="route-btn" onclick="setRoute('eaf')" id="btn-eaf">Electric Arc Furnace (EAF / scrap-based)</button>
+    </div>
+    <div id="routeNote" class="route-note">
+      BF-BOF route: coal-intensive integrated steelmaking. Most large Indian steel plants (SAIL, Tata, JSW integrated units). Higher EU default values apply.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">Your export details</div>
+    <div class="inputs-grid">
+      <div>
+        <label for="cnCode">Product (CN code)</label>
+        <select id="cnCode" onchange="update()">
+          <optgroup label="Primary iron and steel">
+            <option value="7201">7201 &mdash; Pig iron / spiegeleisen</option>
+            <option value="7203">7203 &mdash; Direct reduced iron (DRI / sponge iron)</option>
+            <option value="7205">7205 &mdash; Granules and powders of iron</option>
+            <option value="7206">7206 &mdash; Iron and non-alloy steel ingots</option>
+            <option value="7207" selected>7207 &mdash; Semi-finished (billets, blooms, slabs)</option>
+          </optgroup>
+          <optgroup label="Flat-rolled products (wide strip)">
+            <option value="7208">7208 &mdash; Hot-rolled coil / plate (HRC) &ge;600mm</option>
+            <option value="7209">7209 &mdash; Cold-rolled coil (CRC) &ge;600mm</option>
+            <option value="7210">7210 &mdash; Coated / galvanised &ge;600mm</option>
+            <option value="7211">7211 &mdash; Hot-rolled &lt;600mm wide</option>
+            <option value="7212">7212 &mdash; Coated &lt;600mm wide</option>
+          </optgroup>
+          <optgroup label="Long products">
+            <option value="7213">7213 &mdash; Wire rod (hot-rolled coil)</option>
+            <option value="7214">7214 &mdash; Bars and rods (rebars, rounds)</option>
+            <option value="7215">7215 &mdash; Other bars and rods</option>
+            <option value="7216">7216 &mdash; Angles, shapes and sections</option>
+            <option value="7217">7217 &mdash; Wire of iron or non-alloy steel</option>
+          </optgroup>
+          <optgroup label="Stainless steel">
+            <option value="7218">7218 &mdash; Stainless steel ingots / semi-finished</option>
+            <option value="7219">7219 &mdash; Stainless flat-rolled &ge;600mm</option>
+            <option value="7220">7220 &mdash; Stainless flat-rolled &lt;600mm</option>
+            <option value="7221">7221 &mdash; Stainless bars and rods (hot-rolled)</option>
+            <option value="7222">7222 &mdash; Other stainless bars and rods</option>
+            <option value="7223">7223 &mdash; Stainless wire</option>
+          </optgroup>
+          <optgroup label="Alloy steel">
+            <option value="7224">7224 &mdash; Other alloy steel ingots / semi-finished</option>
+            <option value="7225">7225 &mdash; Alloy flat-rolled &ge;600mm</option>
+            <option value="7226">7226 &mdash; Alloy flat-rolled &lt;600mm</option>
+            <option value="7227">7227 &mdash; Alloy wire rod</option>
+            <option value="7228">7228 &mdash; Other alloy bars and rods</option>
+            <option value="7229">7229 &mdash; Alloy wire</option>
+          </optgroup>
+          <optgroup label="Downstream steel products">
+            <option value="7301">7301 &mdash; Sheet piling / welded angles</option>
+            <option value="7302">7302 &mdash; Railway track material</option>
+            <option value="7304">7304 &mdash; Seamless tubes and pipes</option>
+            <option value="7305">7305 &mdash; Large welded tubes (line pipe)</option>
+            <option value="7306">7306 &mdash; Other welded tubes and pipes</option>
+            <option value="7307">7307 &mdash; Tube or pipe fittings</option>
+            <option value="7308">7308 &mdash; Structures and structural parts</option>
+            <option value="7318">7318 &mdash; Screws, bolts, nuts, washers (fasteners)</option>
+            <option value="7326">7326 &mdash; Other articles of iron or steel</option>
+          </optgroup>
+        </select>
+      </div>
+      <div>
+        <label for="volume">Annual EU export volume (tonnes)</label>
+        <input type="number" id="volume" value="5000" min="1" max="1000000" placeholder="e.g. 5000" oninput="update()">
+      </div>
+    </div>
+    <div class="slider-header">
+      <label style="margin:0;">EU ETS carbon price assumption</label>
+      <span class="slider-val" id="etsDisplay">EUR 80 / tCO2e</span>
+    </div>
+    <input type="range" id="etsPrice" min="50" max="150" step="5" value="80" oninput="update()">
+    <div class="slider-labels">
+      <span>EUR 50 &mdash; conservative</span>
+      <span>EUR 80 &mdash; current market</span>
+      <span>EUR 150 &mdash; 2030 forecast</span>
+    </div>
+  </div>
+
+  <div class="metrics-grid" id="metricsGrid"></div>
+
+  <div class="card">
+    <div class="section-label">Annual cost trajectory 2026&ndash;2034</div>
+    <div class="chart-legend">
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#791F1F;"></div>
+        <span>EU default &mdash; no verified data (dashed)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#1A3A5C;"></div>
+        <span>With verified plant data (estimated)</span>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="mainChart" role="img" aria-label="CBAM cost trajectory 2026 to 2034 for steel and iron exporters"></canvas>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <strong>What this estimate does not show:</strong> This tool uses EU Commission default emission values by CN code and production route. Your actual liability depends on your plant's specific fuel mix, process emissions, yield losses, and whether you have a verified monitoring plan under Annex III. For BF-BOF plants, blast furnace gas recovery and coke oven gas reuse significantly affect the verified SEE. For EAF plants, scrap quality and electricity source are the dominant variables. A full Annex III verified calculation can reduce this estimate by 30&ndash;65%. Scope 2 electricity liability is excluded from 2026 declarations but phases in later. This is not a compliance tool.
+  </div>
+
+  <div class="cta-card">
+    <div class="cta-text">
+      <h3>Want your verified CBAM number?</h3>
+      <p>Full Annex III calculation &middot; Monitoring plan review &middot; 8-year NPV financial model<br>Riddhi Kankaria &mdash; CBAM Advisory &middot; CFA &middot; Hyderabad</p>
+    </div>
+    <a href="https://www.linkedin.com/in/riddhikankaria" target="_blank" class="cta-btn">Connect on LinkedIn &rarr;</a>
+  </div>
+
+  <div class="footer">
+    Estimate based on EU Commission CBAM default values &middot; Implementing Regulation (EU) 2023/1773 &middot; Free allowance phase-out per EU Regulation 2021/447<br>
+    Not a verified calculation &mdash; for compliance purposes a full Annex III methodology is required.<br>
+    Built by <a href="https://www.linkedin.com/in/riddhikankaria">Riddhi Kankaria</a>
+  </div>
+
+</div>
+
+<script>
+const SEE_BOF = {
+  '7201':1.65,'7203':0.95,'7205':1.85,'7206':2.05,'7207':2.10,
+  '7208':2.15,'7209':2.25,'7210':2.35,'7211':2.15,'7212':2.35,
+  '7213':2.10,'7214':2.10,'7215':2.10,'7216':2.12,'7217':2.22,
+  '7218':2.85,'7219':3.05,'7220':3.05,'7221':2.95,'7222':2.95,'7223':3.05,
+  '7224':2.35,'7225':2.45,'7226':2.45,'7227':2.42,'7228':2.42,'7229':2.52,
+  '7301':2.42,'7302':2.32,'7304':2.62,'7305':2.57,'7306':2.52,
+  '7307':2.82,'7308':2.42,'7318':2.82,'7326':2.65
+};
+const SEE_EAF = {
+  '7201':0.50,'7203':0.45,'7205':0.55,'7206':0.55,'7207':0.60,
+  '7208':0.65,'7209':0.72,'7210':0.80,'7211':0.65,'7212':0.80,
+  '7213':0.60,'7214':0.60,'7215':0.60,'7216':0.62,'7217':0.70,
+  '7218':0.90,'7219':1.05,'7220':1.05,'7221':0.95,'7222':0.95,'7223':1.05,
+  '7224':0.75,'7225':0.80,'7226':0.80,'7227':0.78,'7228':0.78,'7229':0.85,
+  '7301':0.78,'7302':0.72,'7304':0.90,'7305':0.85,'7306':0.82,
+  '7307':1.05,'7308':0.78,'7318':1.05,'7326':0.88
+};
+const BENCHMARK = 1.288;
+const PHASE_IN = [0.025,0.05,0.125,0.25,0.375,0.50,0.625,0.75,1.0];
+const YEARS = [2026,2027,2028,2029,2030,2031,2032,2033,2034];
+
+let route = 'bof';
+let chart = null;
+
+function setRoute(r) {
+  route = r;
+  document.getElementById('btn-bof').className = 'route-btn' + (r==='bof' ? ' active' : '');
+  document.getElementById('btn-eaf').className = 'route-btn' + (r==='eaf' ? ' active' : '');
+  document.getElementById('routeNote').textContent = r === 'bof'
+    ? 'BF-BOF route: coal-intensive integrated steelmaking. Most large Indian steel plants (SAIL, Tata, JSW integrated units). Higher EU default values apply.'
+    : 'EAF route: scrap-based electric arc furnace steelmaking. Significantly lower Scope 1 emissions. Induction furnace (IF) plants use similar defaults. Electricity (Scope 2) excluded from 2026 declarations.';
+  update();
+}
+
+function fEUR(n) {
+  return new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
+}
+function fINR(eur) {
+  const cr = eur * 90 / 10000000;
+  if (cr < 0.01) return 'INR ' + Math.round(eur*90).toLocaleString('en-IN');
+  return 'INR ' + cr.toFixed(2) + ' crore';
+}
+
+function update() {
+  const cn = document.getElementById('cnCode').value;
+  const vol = Math.max(1, parseFloat(document.getElementById('volume').value) || 5000);
+  const ets = parseFloat(document.getElementById('etsPrice').value);
+  document.getElementById('etsDisplay').textContent = 'EUR ' + ets + ' / tCO2e';
+
+  const SEE = route === 'bof' ? SEE_BOF : SEE_EAF;
+  const sD = SEE[cn] || 2.10;
+
+  const gapFull = Math.max(0, sD - BENCHMARK);
+  const verifiedFactor = route === 'bof' ? 0.45 : 0.30;
+  const sV = BENCHMARK + gapFull * verifiedFactor;
+  const gapV = Math.max(0, sV - BENCHMARK);
+
+  const cD = PHASE_IN.map(p => Math.round(gapFull * vol * p * ets));
+  const cV = PHASE_IN.map(p => Math.round(gapV * vol * p * ets));
+
+  const saving = cD[8] - cV[8];
+  const pct = gapFull > 0 ? Math.round((1 - gapV/gapFull)*100) : 0;
+
+  document.getElementById('metricsGrid').innerHTML = `
+    <div class="metric">
+      <div class="metric-label">2026 cost<br>(CBAM at 2.5%)</div>
+      <div class="metric-value">${fEUR(cD[0])}</div>
+      <div class="metric-sub">${fINR(cD[0])}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">2034 cost<br>(full CBAM, 100%)</div>
+      <div class="metric-value">${fEUR(cD[8])}</div>
+      <div class="metric-sub">${fINR(cD[8])}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">EU default SEE<br>(${route.toUpperCase()} route)</div>
+      <div class="metric-value">${sD.toFixed(2)}</div>
+      <div class="metric-sub">tCO2e per tonne</div>
+    </div>
+    <div class="metric highlight">
+      <div class="metric-label">Saving in 2034 with<br>verified data (est.)</div>
+      <div class="metric-value">${fEUR(saving)}</div>
+      <div class="metric-sub">${fINR(saving)} &middot; up to ${pct}% less</div>
+    </div>`;
+
+  if (chart) chart.destroy();
+  chart = new Chart(document.getElementById('mainChart'), {
+    type: 'line',
+    data: {
+      labels: YEARS,
+      datasets: [
+        {
+          label: 'EU default',
+          data: cD,
+          borderColor: '#791F1F',
+          backgroundColor: 'rgba(121,31,31,0.05)',
+          borderWidth: 2,
+          borderDash: [5,4],
+          tension: 0.35,
+          fill: false,
+          pointRadius: 4,
+          pointBackgroundColor: '#791F1F',
+          pointBorderColor: 'white',
+          pointBorderWidth: 2
+        },
+        {
+          label: 'Verified data',
+          data: cV,
+          borderColor: '#1A3A5C',
+          backgroundColor: 'rgba(26,58,92,0.06)',
+          borderWidth: 2.5,
+          tension: 0.35,
+          fill: true,
+          pointRadius: 4,
+          pointBackgroundColor: '#1A3A5C',
+          pointBorderColor: 'white',
+          pointBorderWidth: 2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'white',
+          borderColor: '#D3D1C7',
+          borderWidth: 1,
+          titleColor: '#444441',
+          bodyColor: '#444441',
+          padding: 12,
+          callbacks: { label: ctx => '  ' + ctx.dataset.label + ': ' + fEUR(ctx.parsed.y) }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(0,0,0,0.05)' },
+          ticks: {
+            font: { size: 11 },
+            color: '#888780',
+            callback: v => {
+              if (v >= 1000000) return 'EUR ' + (v/1000000).toFixed(1) + 'M';
+              if (v >= 1000) return 'EUR ' + (v/1000).toFixed(0) + 'k';
+              return 'EUR ' + v;
+            }
+          }
+        },
+        x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#888780' } }
+      }
+    }
+  });
+}
+
+window.addEventListener('load', update);
+</script>
+</body>
+</html>
